@@ -10,6 +10,7 @@ This project is a Recipe Builder solution that leverages Semantic Kernel and age
   - [Recipe Builder Agent](#recipe-builder-agent)
   - [Vegan Substitution Agent](#vegan-substitution-agent)
   - [Gluten-Free Substitution Agent](#gluten-free-substitution-agent)
+- [OTEL Endpoint](#otel-endpoint)
 - [Contributing](#contributing)
 - [License](#license)
 - [Contact](#contact)
@@ -51,6 +52,37 @@ The Vegan Substitution Agent provides vegan alternatives for ingredients in reci
 ### Gluten-Free Substitution Agent
 
 The Gluten-Free Substitution Agent suggests gluten-free substitutions for recipe ingredients.
+
+## OTEL Endpoint
+
+I highly recommend the .NET Aspire dashboard to create an OTEL endpoint that you can use for this solution and capture/visual monitoring.
+
+
+## Running the Aspire Dashboard Locally
+
+To run the Aspire dashboard locally, follow these steps:
+
+1. Start the Dashboard:
+   - Use the Docker command line to start the dashboard. Open your terminal and run the following command:
+     ```bash
+     docker run --rm -it -d -p 18888:18888 -p 4317:18889 --name aspire-dashboard mcr.microsoft.com/dotnet/aspire-dashboard:9.0
+     ```
+   - This command will start a container from the Aspire dashboard image and map the necessary ports.
+
+2. Access the Dashboard:
+   - Once the container is running, open your web browser and navigate to http://localhost:18888 to view the dashboard UI.
+
+3. Login to the Dashboard:
+   - The dashboard requires a token for authentication. The token is printed in the container logs. You can retrieve it by running:
+     ```bash
+     docker logs aspire-dashboard
+     ```
+   - Copy the token and use it to log in to the dashboard.
+
+4. Send Telemetry to the Dashboard:
+   - Configure your applications to send telemetry data to the dashboard using the OpenTelemetry Protocol (OTLP). The endpoint for receiving data is http://localhost:4317.
+
+For more detailed configuration options, refer to the official documentation. https://learn.microsoft.com/en-us/dotnet/aspire/fundamentals/dashboard/standalone?tabs=bash
 
 ## Contributing
 
