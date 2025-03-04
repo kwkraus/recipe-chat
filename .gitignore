@@ -333,3 +333,4 @@ $RECYCLE.BIN/
 **/.DS_Store
 */charts
 */.env
+/RecipeChat/nuget.config
