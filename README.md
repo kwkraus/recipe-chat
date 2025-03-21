@@ -1,4 +1,4 @@
-# Recipe Builder Solution
+# Agentic AI Recipe Builder Solution
 
 This project is a Recipe Builder solution that leverages Semantic Kernel and agentic AI. It includes multiple agents: the Recipe Builder Agent, the Vegan Substitution Agent, and the Gluten-Free Substitution Agent.
 
