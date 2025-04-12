@@ -65,7 +65,7 @@ To run the Aspire dashboard locally, follow these steps:
 1. Start the Dashboard:
    - Use the Docker command line to start the dashboard. Open your terminal and run the following command:
      ```bash
-     docker run --rm -it -d -p 18888:18888 -p 4317:18889 --name aspire-dashboard mcr.microsoft.com/dotnet/aspire-dashboard:9.0
+     docker run --rm -it -d -p 18888:18888 -p 4317:18889 --name aspire-dashboard mcr.microsoft.com/dotnet/aspire-dashboard:latest
      ```
    - This command will start a container from the Aspire dashboard image and map the necessary ports.
 
