@@ -1,123 +1,66 @@
 using System.Diagnostics;
-using System.Text.Json;
-using RecipeChat.PromptTemplates.Models;
 using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.Agents;
-using Microsoft.SemanticKernel.Agents.Chat;
 using Microsoft.SemanticKernel.ChatCompletion;
-using OpenTelemetry.Trace;
+using RecipeChat.GroupChat;
+using RecipeChat.GroupChat.Models;
 
 namespace RecipeChat;
 
 public class Worker : BackgroundService
 {
     private readonly IHostApplicationLifetime _hostApplicationLifetime;
-    private readonly Kernel _kernel;
-    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ILogger<Worker> _logger;
     private readonly ActivitySource _activitySource;
+    private readonly RecipeGroupChat _recipeGroupChat;
 
-    public Worker(IHostApplicationLifetime hostApplicationLifetime, Kernel kernel, IHttpClientFactory httpClientFactory, ActivitySource activitySource)
+    public Worker(RecipeGroupChat recipeGroupChat, IHostApplicationLifetime hostApplicationLifetime, ILogger<Worker> logger, ActivitySource activitySource)
     {
+        _recipeGroupChat = recipeGroupChat;
         _hostApplicationLifetime = hostApplicationLifetime;
-        _kernel = kernel;
-        _httpClientFactory = httpClientFactory;
+        _logger = logger;
         _activitySource = activitySource;
+
+        _recipeGroupChat.GroupChatResponseGenerated += OnGroupChatResponseGenerated;
+    }
+
+    private void OnGroupChatResponseGenerated(object? sender, GroupChatResponseGeneratedEventArgs e)
+    {
+        PrettyPrint(e.ChatMessageContent, e.ChatMessageContent.Content ?? "<No Content>");
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         using var activity = _activitySource.StartActivity("ExecuteAsync");
 
-        ChatCompletionAgent recipeBuilderAgent = await CreateChatCompletionAgentAsync("PromptTemplates/Agents/RecipeBuilderAgent.yaml", _kernel);
-        ChatCompletionAgent glutenFreeReviewerAgent = await CreateChatCompletionAgentAsync("PromptTemplates/Agents/GlutenFreeReviewerAgent.yaml", _kernel);
-        ChatCompletionAgent veganReviewerAgent = await CreateChatCompletionAgentAsync("PromptTemplates/Agents/VeganReviewerAgent.yaml", _kernel);
+        Console.ForegroundColor = ConsoleColor.Gray;
+        Console.WriteLine("ASSISTANT: How can I help you? Type 'exit' to quit.");
 
-        KernelFunctionSelectionStrategy selectionStrategy = await CreateSelectionStrategy("PromptTemplates/Strategies/AgentSelectionStrategy.yaml", _kernel);
-        KernelFunctionTerminationStrategy terminationStrategy = await CreateTerminationStrategy("PromptTemplates/Strategies/AgentTerminationStrategy.yaml", _kernel, new[] 
-        { 
-            recipeBuilderAgent,
-            glutenFreeReviewerAgent,
-            veganReviewerAgent
-        });
-
-        AgentGroupChat chat = new(recipeBuilderAgent, glutenFreeReviewerAgent, veganReviewerAgent)
+        while (true)
         {
-            ExecutionSettings = new()
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Write("USER: ");
+            string? userInput = Console.ReadLine();
+            Console.ResetColor();
+            if (userInput == null || userInput.Equals("exit", StringComparison.OrdinalIgnoreCase))
             {
-                SelectionStrategy = selectionStrategy,
-                TerminationStrategy = terminationStrategy
+                break;
             }
-        };
 
-        await AddChatMessageAsync(chat, "Please create a main dish from the following ingredients: Chicken Breast, Tomatoes, Onions, Garlic, Olive Oil, Heavy Cream, Pasta");
-        await AddChatMessageAsync(chat, "I'm allergic to gluten");
-        await AddChatMessageAsync(chat, "Can I also get a vegan friendly version?");
+            await _recipeGroupChat.AddChatMessageAsync(userInput);
+            await _recipeGroupChat.StartGroupChat();
+        }    
 
-        _hostApplicationLifetime.StopApplication();
+        _hostApplicationLifetime.StopApplication();    
     }
 
-    private async Task AddChatMessageAsync(AgentGroupChat chat, string message)
+    private void PrettyPrint(ChatMessageContent chatMessageContent, string message)
     {
-        chat.AddChatMessage(new ChatMessageContent(AuthorRole.User, message));
-        do
-        {
-            await foreach (ChatMessageContent response in chat.InvokeAsync())
-            {
-                // _logger.LogInformation($"{response.ToString()}");
-            }
-        } while (!chat.IsComplete);
-    }
+        Console.ForegroundColor = chatMessageContent.Role.Equals(AuthorRole.User) ? ConsoleColor.Yellow :
+                                  chatMessageContent.Role.Equals(AuthorRole.Assistant) ? ConsoleColor.Gray : 
+                                  ConsoleColor.White;
 
-    private async Task<ChatCompletionAgent> CreateChatCompletionAgentAsync(string promptTemplatePath, Kernel kernel, KernelArguments? kernelArgs = null)
-    {
-        var agentPrompt = await File.ReadAllTextAsync(promptTemplatePath);
-        var agentPromptTemplate = KernelFunctionYaml.ToPromptTemplateConfig(agentPrompt);
-        var agent = new ChatCompletionAgent(agentPromptTemplate)
-        {
-            Kernel = kernel,
-            Arguments = new KernelArguments(kernelArgs ?? new KernelArguments(), agentPromptTemplate.ExecutionSettings)
-        };
-
-        return agent;
-    }
-
-    private async Task<KernelFunctionSelectionStrategy> CreateSelectionStrategy(string promptTemplatePath, Kernel kernel)
-    {
-        KernelFunction agentSelectionFunction = KernelFunctionYaml.FromPromptYaml(await File.ReadAllTextAsync(promptTemplatePath));
-        
-        KernelFunctionSelectionStrategy selectionStrategy = new(agentSelectionFunction, kernel)
-        {
-            ResultParser = (result) =>
-            {
-                var selectionResponse = JsonSerializer.Deserialize<AgentSelectionStrategyResponse>(result.GetValue<string>()!);
-                return selectionResponse.NextAgent;
-            },
-            AgentsVariableName = "agents",
-            HistoryVariableName = "history"
-        };
-
-        return selectionStrategy;
-    }
-
-    private async Task<KernelFunctionTerminationStrategy> CreateTerminationStrategy(string promptTemplatePath, Kernel kernel, Agent[]? agentsAllowedToTerminate = null)
-    {
-        KernelFunction agentTerminationFunction = KernelFunctionYaml.FromPromptYaml(await File.ReadAllTextAsync(promptTemplatePath));
-        
-        KernelFunctionTerminationStrategy terminationStrategy = new(agentTerminationFunction, kernel)
-        {
-            ResultParser = (result) => 
-            {
-                var terminationResponse = JsonSerializer.Deserialize<AgentTerminationStrategyResponse>(result.GetValue<string>()!);
-                return terminationResponse.ShouldTerminate;
-            },
-            AgentVariableName = "agents",
-            HistoryVariableName = "history",
-            HistoryReducer = new ChatHistoryTruncationReducer(1),
-            MaximumIterations = 2,
-            Agents = agentsAllowedToTerminate,
-            AutomaticReset = true
-        };
-
-        return terminationStrategy;
+        Console.WriteLine($"{chatMessageContent.Role.Label.ToUpper()} [{chatMessageContent.AuthorName}]: {message}");
+        Console.WriteLine();
+        Console.ResetColor();
     }
 }
