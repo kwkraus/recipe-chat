@@ -23,4 +23,22 @@
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.12.0" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.12.0" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Update="PromptTemplates\Agents\GlutenFreeReviewerAgent.yaml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="PromptTemplates\Agents\RecipeBuilderAgent.yaml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="PromptTemplates\Agents\VeganReviewerAgent.yaml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="PromptTemplates\Strategies\AgentSelectionStrategy.yaml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="PromptTemplates\Strategies\AgentTerminationStrategy.yaml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>
