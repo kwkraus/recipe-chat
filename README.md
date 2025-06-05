@@ -26,7 +26,7 @@ This project is a Recipe Builder solution that leverages Semantic Kernel and age
 
 ### 2. Environment Variables for Console App
 Create a `.env` file in the RecipeChat.Console project with the following variables:
-```json
+```bash
 AZURE_OPENAI_ENDPOINT="https://[YOUR_ENDPOINT_NAME].openai.azure.com"
 AZURE_OPENAI_DEPLOYMENT_NAME="[YOUR_MODEL_DEPLOYMENT_NAME]"
 OTEL_ENDPOINT="[YOUR_OTEL_ENDPOINT]"
