@@ -4,6 +4,7 @@ This project is a Recipe Builder solution that leverages Semantic Kernel and age
 
 ## Table of Contents
 
+- [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Usage](#usage)
 - [Agents](#agents)
@@ -14,6 +15,23 @@ This project is a Recipe Builder solution that leverages Semantic Kernel and age
 - [Contributing](#contributing)
 - [License](#license)
 - [Contact](#contact)
+
+## Prerequisites
+
+### 1. Tools
+- [.NET 9.0 SDK](https://dotnet.microsoft.com/)
+- [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/)
+- Azure OpenAI Service instance
+- Auth uses `DefaultAzureCredential` and assumes you are logged in via the Azure CLI with `az login` and have the `Cognitive Services OpenAI User` RBAC role granted to you on the Azure OpenAI Service instance.
+
+### 2. Environment Variables for Console App
+Create a `.env` file in the RecipeChat.Console project with the following variables:
+```json
+AZURE_OPENAI_ENDPOINT="https://[YOUR_ENDPOINT_NAME].openai.azure.com"
+AZURE_OPENAI_DEPLOYMENT_NAME="[YOUR_MODEL_DEPLOYMENT_NAME]"
+OTEL_ENDPOINT="[YOUR_OTEL_ENDPOINT]"
+LOG_HTTP_REQUESTS="true"
+```
 
 ## Installation
 
